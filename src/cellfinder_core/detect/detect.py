@@ -1,14 +1,23 @@
-import multiprocessing
+import logging
+import os
 from datetime import datetime
-from queue import Queue
-from typing import Callable, Optional
+from multiprocessing.pool import Pool
+from typing import Callable
 
 import numpy as np
 from imlib.general.system import get_num_processes
+from imlib.IO.cells import save_cells
 
 from cellfinder_core.detect.filters.plane import TileProcessor
 from cellfinder_core.detect.filters.setup_filters import setup_tile_filtering
 from cellfinder_core.detect.filters.volume.volume_filter import VolumeFilter
+
+LOG_FMT = "%(asctime)s %(message)s"
+LOG_DATE_FMT = "%Y-%m-%d %H:%M"
+
+logging.basicConfig(format=LOG_FMT, datefmt=LOG_DATE_FMT)
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
 
 
 def calculate_parameters_in_pixels(
@@ -40,6 +49,8 @@ def main(
     signal_array,
     start_plane,
     end_plane,
+    save_path,
+    chunk_size,
     voxel_sizes,
     soma_diameter,
     max_cluster_size,
@@ -55,7 +66,7 @@ def main(
     save_planes=False,
     plane_directory=None,
     *,
-    callback: Optional[Callable[[int], None]] = None,
+    callback: Callable[[int], None] = None,
 ):
     """
     Parameters
@@ -64,11 +75,6 @@ def main(
         A callback function that is called every time a plane has finished
         being processed. Called with the plane number that has finished.
     """
-    if not np.issubdtype(signal_array.dtype, np.integer):
-        raise ValueError(
-            "signal_array must be integer datatype, but has datatype "
-            f"{signal_array.dtype}"
-        )
     n_processes = get_num_processes(min_free_cpu_cores=n_free_cpus)
     start_time = datetime.now()
 
@@ -87,6 +93,11 @@ def main(
 
     if end_plane == -1:
         end_plane = len(signal_array)
+    elif end_plane == start_plane:
+        raise ValueError(
+            "Please, the end plane and start plane must be different."
+        )
+
     signal_array = signal_array[start_plane:end_plane]
 
     callback = callback or (lambda *args, **kwargs: None)
@@ -127,31 +138,41 @@ def main(
         n_sds_above_mean_thresh,
     )
 
-    mp_ctx = multiprocessing.get_context("spawn")
-    with mp_ctx.Pool(n_processes) as worker_pool:
-        # Start 2D filter
-        # Submits each plane to the worker pool, and sets up a queue of
-        # asyncronous results
-        async_results: Queue = Queue()
+    worker_pool = Pool(n_processes)
 
-        # NOTE: Need to make sure every plane isn't read into memory at this
-        # stage, as all of these jobs are submitted immediately to the pool.
-        # *plane* is a dask array, so as long as it isn't forced into memory
-        # (e.g. using np.array(plane)) here then there shouldn't be an issue
-        for plane in signal_array:
-            res = worker_pool.apply_async(
-                mp_tile_processor.get_tile_mask, args=(plane,)
-            )
-            async_results.put(res)
+    # Start 2D filter
+    # Submits each plane to the worker pool, and sets up a list of
+    # asyncronous results
+    block = 1
+    async_results = []
 
-        # Start 3D filter
-        # This runs in the main thread, and blocks until the all the 2D and
-        # then 3D filtering has finished
-        cells = mp_3d_filter.process(async_results, callback=callback)
-
-    print(
-        "Detection complete - all planes done in : {}".format(
-            datetime.now() - start_time
+    logger.info("Start Modified Loop")
+    for id, plane in enumerate(signal_array):
+        res = worker_pool.apply_async(
+            mp_tile_processor.get_tile_mask, args=(np.array(plane),)
         )
-    )
+        async_results.append(res)
+
+        if (
+            len(async_results) % chunk_size == 0
+            or id == signal_array.shape[0] - 1
+        ):
+            logger.info(f"Offloading data on plane {id}")
+
+            # Start 3D filter
+            # This runs in the main thread
+            cells = mp_3d_filter.process(
+                async_results, signal_array, callback=callback
+            )
+            async_results = []
+
+            # save the blocks
+            fname = "cells_block_" + str(block) + ".xml"
+            save_cells(cells, os.path.join(save_path, fname))
+            block += 1
+
+    seg_time = datetime.now() - start_time
+    logger.info(f"Detection complete - all planes done in : {seg_time}")
+
+    cells = []
     return cells
