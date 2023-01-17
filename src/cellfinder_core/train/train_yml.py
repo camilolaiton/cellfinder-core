@@ -8,6 +8,8 @@ N.B imports are within functions to prevent tensorflow being imported before
 it's warnings are silenced
 """
 
+
+import logging
 import os
 from argparse import (
     ArgumentDefaultsHelpFormatter,
@@ -25,8 +27,9 @@ from imlib.IO.yaml import read_yaml_section
 from sklearn.model_selection import train_test_split
 
 import cellfinder_core as program_for_log
-from cellfinder_core import logger
-from cellfinder_core.tools.prep import DEFAULT_INSTALL_PATH
+
+home = Path.home()
+install_path = home / ".cellfinder"
 
 tf_suppress_log_messages = [
     "sample_weight modes were coerced from",
@@ -299,7 +302,7 @@ def run(
     n_free_cpus=2,
     trained_model=None,
     model_weights=None,
-    install_path=DEFAULT_INSTALL_PATH,
+    install_path=install_path,
     model="resnet50_tv",
     network_depth="50",
     learning_rate=0.0001,
@@ -332,17 +335,13 @@ def run(
 
     ensure_directory_exists(output_dir)
     model_weights = prep_training(
-        n_free_cpus,
-        trained_model,
-        install_path,
-        model_weights,
-        model,
+        n_free_cpus, trained_model, model_weights, install_path, model
     )
 
     yaml_contents = parse_yaml(yaml_file)
 
     tiff_files = get_tiff_files(yaml_contents)
-    logger.info(
+    logging.info(
         f"Found {sum(len(imlist) for imlist in tiff_files)} images "
         f"from {len(yaml_contents)} datasets "
         f"in {len(yaml_file)} yaml files"
@@ -359,7 +358,7 @@ def run(
     signal_train, background_train, labels_train = make_lists(tiff_files)
 
     if test_fraction > 0:
-        logger.info("Splitting data into training and validation datasets")
+        logging.info("Splitting data into training and validation datasets")
         (
             signal_train,
             signal_test,
@@ -374,7 +373,7 @@ def run(
             test_size=test_fraction,
         )
 
-        logger.info(
+        logging.info(
             f"Using {len(signal_train)} images for training and "
             f"{len(signal_test)} images for validation"
         )
@@ -390,7 +389,7 @@ def run(
         base_checkpoint_file_name = "-epoch.{epoch:02d}-loss-{val_loss:.3f}.h5"
 
     else:
-        logger.info("No validation data selected.")
+        logging.info("No validation data selected.")
         validation_generator = None
         base_checkpoint_file_name = "-epoch.{epoch:02d}.h5"
 
@@ -433,7 +432,7 @@ def run(
         csv_logger = CSVLogger(filepath)
         callbacks.append(csv_logger)
 
-    logger.info("Beginning training.")
+    logging.info("Beginning training.")
     model.fit(
         training_generator,
         validation_data=validation_generator,
@@ -443,13 +442,13 @@ def run(
     )
 
     if save_weights:
-        logger.info("Saving model weights")
+        logging.info("Saving model weights")
         model.save_weights(str(output_dir / "model_weights.h5"))
     else:
-        logger.info("Saving model")
+        logging.info("Saving model")
         model.save(output_dir / "model.h5")
 
-    logger.info(
+    logging.info(
         "Finished training, " "Total time taken: %s",
         datetime.now() - start_time,
     )

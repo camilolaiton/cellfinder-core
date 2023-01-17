@@ -1,7 +1,7 @@
 import os
-from pathlib import Path
 
-from cellfinder_core import logger
+from imlib.general.system import ensure_directory_exists
+
 from cellfinder_core.download.download import download
 
 model_weight_urls = {
@@ -17,30 +17,21 @@ download_requirements_gb = {
 }
 
 
-def main(model_name: str, download_path: os.PathLike) -> Path:
-    """
-    For a given model name and download path, download the model file
-    and return the path to the downloaded file.
-    """
-    download_path = Path(download_path)
+def main(model, download_path):
+    model_weight_dir = os.path.join(download_path, "model_weights")
+    model_path = os.path.join(model_weight_dir, model + ".h5")
+    if not os.path.exists(model_path):
+        ensure_directory_exists(model_weight_dir)
 
-    model_weight_dir = download_path / "model_weights"
-    model_path = model_weight_dir / f"{model_name}.h5"
-    if not model_path.exists():
-        model_weight_dir.mkdir(parents=True)
-
-        logger.info(
-            f"Downloading '{model_name}' model. This may take a little while."
-        )
-
+        download_path = os.path.join(model_weight_dir, model + ".h5")
         download(
-            model_path,
-            model_weight_urls[model_name],
-            model_name,
-            download_requires=download_requirements_gb[model_name],
+            download_path,
+            model_weight_urls[model],
+            model,
+            download_requires=download_requirements_gb[model],
         )
 
     else:
-        logger.info(f"Model already exists at {model_path}. Skipping download")
+        print(f"Model already exists at {model_path}. Skipping download")
 
     return model_path

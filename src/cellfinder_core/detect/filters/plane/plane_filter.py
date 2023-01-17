@@ -1,7 +1,6 @@
 from dataclasses import dataclass
 from typing import Tuple
 
-import dask.array as da
 import numpy as np
 
 from cellfinder_core.detect.filters.plane.classical_filter import enhance_peaks
@@ -16,25 +15,15 @@ class TileProcessor:
     log_sigma_size: float
     n_sds_above_mean_thresh: float
 
-    def get_tile_mask(self, plane: da.array) -> Tuple[np.ndarray, np.ndarray]:
+    def get_tile_mask(
+        self, plane: np.ndarray
+    ) -> Tuple[np.ndarray, np.ndarray]:
         """
-        Parameters
-        ----------
-        plane :
-            Input plane.
-
-        Returns
-        -------
-        plane :
-            Modified plane.
-        mask :
-            Good tiles mask.
+        Warning: this modifies ``plane`` in place.
         """
         laplace_gaussian_sigma = self.log_sigma_size * self.soma_diameter
         plane = plane.T
-        plane = np.clip(plane, 0, self.clipping_value)
-        # Read plane from a dask array into memory as a numpy array
-        plane = np.array(plane)
+        np.clip(plane, 0, self.clipping_value, out=plane)
 
         walker = TileWalker(plane, self.soma_diameter)
 
@@ -46,9 +35,11 @@ class TileProcessor:
             gaussian_sigma=laplace_gaussian_sigma,
         )
 
+        # threshold
         avg = thresholded_img.ravel().mean()
         sd = thresholded_img.ravel().std()
-        threshold = avg + self.n_sds_above_mean_thresh * sd
 
-        plane[thresholded_img > threshold] = self.threshold_value
+        plane[
+            thresholded_img > avg + self.n_sds_above_mean_thresh * sd
+        ] = self.threshold_value
         return plane, walker.good_tiles_mask.astype(np.uint8)

@@ -1,6 +1,7 @@
+import logging
+
 import numpy as np
 
-from cellfinder_core import logger
 from cellfinder_core.detect.filters.volume.ball_filter import BallFilter
 from cellfinder_core.detect.filters.volume.structure_detection import (
     CellDetector,
@@ -106,7 +107,7 @@ def check_centre_in_cuboid(centre, max_coords):
     """
     relative_coords = np.array([centre[k] for k in ("x", "y", "z")])
     if (relative_coords > max_coords).all():
-        logger.info(
+        logging.info(
             'Relative coordinates "{}" exceed maximum volume '
             'dimension of "{}"'.format(relative_coords, max_coords)
         )

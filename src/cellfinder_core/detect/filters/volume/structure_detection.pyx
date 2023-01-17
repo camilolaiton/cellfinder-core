@@ -1,4 +1,5 @@
 # distutils: language = c++
+
 # cython: language_level=3
 
 import cython
@@ -94,6 +95,15 @@ cdef class CellDetector:
 
     cpdef get_previous_layer(self):
         return np.array(self.previous_layer, dtype=np.uint64)
+
+    cpdef get_next_structure_id(self):
+        return self.next_structure_id
+
+    cpdef set_previous_params(self, layer, struct_id, holdover):
+        self.previous_layer = layer
+        self.relative_z += 1
+        self.next_structure_id = struct_id
+        self.structure_manager.seed_coords_map(holdover)
 
     cpdef process(self, layer):  # WARNING: inplace  # WARNING: ull may be overkill but ulong required
         assert [e for e in layer.shape[:2]] == [e for e in self.shape], \
@@ -331,3 +341,6 @@ cdef class StructureManager:
             p = get_structure_centre(structure)
             cell_centres.push_back(p)
         return cell_centres
+
+    cdef seed_coords_map(self, holdover):
+        self.coords_maps = holdover

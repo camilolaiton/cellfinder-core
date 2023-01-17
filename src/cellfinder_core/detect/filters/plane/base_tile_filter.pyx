@@ -1,4 +1,3 @@
-# cython: language_level=3
 # distutils: language = c++
 
 from libcpp.map cimport map as CppMap

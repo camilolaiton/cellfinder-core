@@ -1,6 +1,6 @@
-import tensorflow as tf
+import logging
 
-from cellfinder_core import logger
+import tensorflow as tf
 
 
 def allow_gpu_memory_growth():
@@ -11,20 +11,20 @@ def allow_gpu_memory_growth():
     """
     gpus = tf.config.experimental.list_physical_devices("GPU")
     if gpus:
-        logger.debug("Allowing GPU memory growth")
+        logging.debug("Allowing GPU memory growth")
         try:
             # Currently, memory growth needs to be the same across GPUs
             for gpu in gpus:
                 tf.config.experimental.set_memory_growth(gpu, True)
             logical_gpus = tf.config.experimental.list_logical_devices("GPU")
-            logger.debug(
+            logging.debug(
                 f"{len(gpus)} physical GPUs, {len(logical_gpus)} logical GPUs"
             )
         except RuntimeError as e:
             # Memory growth must be set before GPUs have been initialized
             print(e)
     else:
-        logger.debug("No GPUs found, using CPU.")
+        logging.debug("No GPUs found, using CPU.")
 
 
 def set_tf_threads(max_threads):
@@ -33,7 +33,7 @@ def set_tf_threads(max_threads):
     :param max_threads: Maximum number of threads to use
     :return:
     """
-    logger.debug(
+    logging.debug(
         f"Setting maximum number of threads for tensorflow "
         f"to: {max_threads}"
     )

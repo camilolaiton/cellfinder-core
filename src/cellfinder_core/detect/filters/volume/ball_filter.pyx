@@ -1,5 +1,6 @@
 # cython: language_level=3
 
+
 cimport cython
 cimport libc.math as cmath
 
@@ -104,12 +105,12 @@ cdef class BallFilter:
         Get the plane in the middle of self.volume.
         """
         cdef uint z = self.middle_z_idx
-        return np.array(self.volume[:, :, z], dtype=np.uint16)
+        return np.array(self.volume[:, :, z])
 
     @cython.initializedcheck(False)
     @cython.cdivision(True)
     @cython.boundscheck(False)
-    cpdef walk(self):  # Highly optimised because most time critical
+    cpdef walk(self):  # Highly optimized because most time critical
         cdef uint ball_centre_x, ball_centre_y
         cdef uint ball_radius = self.ball_xy_size // 2
         cdef ushort[:,:,:] cube

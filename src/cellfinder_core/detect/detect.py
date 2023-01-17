@@ -1,23 +1,16 @@
-import logging
+
 import os
+import numpy as np
+
+from typing import Callable
 from datetime import datetime
 from multiprocessing.pool import Pool
-from typing import Callable
 
-import numpy as np
-from imlib.general.system import get_num_processes
 from imlib.IO.cells import save_cells
-
+from imlib.general.system import get_num_processes
 from cellfinder_core.detect.filters.plane import TileProcessor
 from cellfinder_core.detect.filters.setup_filters import setup_tile_filtering
 from cellfinder_core.detect.filters.volume.volume_filter import VolumeFilter
-
-LOG_FMT = "%(asctime)s %(message)s"
-LOG_DATE_FMT = "%Y-%m-%d %H:%M"
-
-logging.basicConfig(format=LOG_FMT, datefmt=LOG_DATE_FMT)
-logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
 
 
 def calculate_parameters_in_pixels(
@@ -93,11 +86,6 @@ def main(
 
     if end_plane == -1:
         end_plane = len(signal_array)
-    elif end_plane == start_plane:
-        raise ValueError(
-            "Please, the end plane and start plane must be different."
-        )
-
     signal_array = signal_array[start_plane:end_plane]
 
     callback = callback or (lambda *args, **kwargs: None)
@@ -137,7 +125,7 @@ def main(
         log_sigma_size,
         n_sds_above_mean_thresh,
     )
-
+    
     worker_pool = Pool(n_processes)
 
     # Start 2D filter
@@ -146,33 +134,34 @@ def main(
     block = 1
     async_results = []
 
-    logger.info("Start Modified Loop")
+    print("Start Modified Loop")
     for id, plane in enumerate(signal_array):
         res = worker_pool.apply_async(
             mp_tile_processor.get_tile_mask, args=(np.array(plane),)
         )
         async_results.append(res)
 
-        if (
-            len(async_results) % chunk_size == 0
-            or id == signal_array.shape[0] - 1
-        ):
-            logger.info(f"Offloading data on plane {id}")
+        if len(async_results) % chunk_size == 0 or id == signal_array.shape[0] - 1:
+            
+            print('Offloading data on plane {0}'.format(id))
 
             # Start 3D filter
             # This runs in the main thread
             cells = mp_3d_filter.process(
                 async_results, signal_array, callback=callback
-            )
+                )
             async_results = []
-
-            # save the blocks
-            fname = "cells_block_" + str(block) + ".xml"
+            
+            # save the blocks 
+            fname = 'cells_block_' + str(block) + '.xml'
             save_cells(cells, os.path.join(save_path, fname))
             block += 1
 
-    seg_time = datetime.now() - start_time
-    logger.info(f"Detection complete - all planes done in : {seg_time}")
-
+    print(
+        "Detection complete - all planes done in : {}".format(
+            datetime.now() - start_time
+        )
+    )
+    
     cells = []
     return cells

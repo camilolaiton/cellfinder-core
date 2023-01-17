@@ -3,11 +3,10 @@ N.B imports are within functions to prevent tensorflow being imported before
 it's warnings are silenced
 """
 
+import logging
 import os
 
 from imlib.general.logging import suppress_specific_logs
-
-from cellfinder_core import logger
 
 tf_suppress_log_messages = [
     "multiprocessing can interact badly with TensorFlow"
@@ -57,11 +56,15 @@ def main(
     """
     suppress_tf_logging(tf_suppress_log_messages)
 
+    from pathlib import Path
+
     from cellfinder_core.classify import classify
     from cellfinder_core.detect import detect
     from cellfinder_core.tools import prep
 
-    logger.info("Detecting cell candidates")
+    home = Path.home()
+    install_path = home / ".cellfinder"
+    logging.info("Detecting cell candidates")
 
     points = detect.main(
         signal_array,
@@ -83,12 +86,11 @@ def main(
     if detect_finished_callback is not None:
         detect_finished_callback(points)
 
-    install_path = None
     model_weights = prep.prep_classification(
         trained_model, model_weights, install_path, model, n_free_cpus
     )
     if len(points) > 0:
-        logger.info("Running classification")
+        logging.info("Running classification")
         points = classify.main(
             points,
             signal_array,
@@ -106,8 +108,10 @@ def main(
             callback=classify_callback,
         )
     else:
-        logger.info("No candidates, skipping classification")
+        logging.info("No candidates, skipping classification")
     return points
+    # logging.info("Saving classified cells")
+    # save_cells(points, classified_points_path)
 
 
 def suppress_tf_logging(tf_suppress_log_messages):

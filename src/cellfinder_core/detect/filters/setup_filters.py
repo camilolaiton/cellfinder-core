@@ -14,6 +14,7 @@ def setup(
     ball_z_size,
     ball_overlap_fraction=0.6,
     z_offset=0,
+
 ):
     plane = plane.T
 
@@ -23,7 +24,7 @@ def setup(
 
     tile_width = soma_diameter * 2
     layer_width, layer_height = plane.shape
-
+    
     ball_filter = BallFilter(
         layer_width,
         layer_height,
@@ -37,7 +38,7 @@ def setup(
     )
     start_z = z_offset + int(math.floor(ball_z_size / 2))
     cell_detector = CellDetector(layer_width, layer_height, start_z=start_z)
-
+    
     return ball_filter, cell_detector
 
 
