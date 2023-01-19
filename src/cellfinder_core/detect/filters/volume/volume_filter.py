@@ -73,7 +73,6 @@ class VolumeFilter(object):
     def process(
         self,
         async_results: List[AsyncResult],
-        signal_array: np.ndarray,
         callback: Callable[[int], None],
     ):
         

@@ -148,8 +148,9 @@ def main(
             # Start 3D filter
             # This runs in the main thread
             cells = mp_3d_filter.process(
-                async_results, signal_array, callback=callback
-                )
+                async_results=async_results,
+                callback=callback
+            )
             async_results = []
             
             # save the blocks 
