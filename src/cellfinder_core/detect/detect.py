@@ -154,6 +154,7 @@ def main(
             
             # save the blocks 
             fname = 'cells_block_' + str(block) + '.xml'
+            print(f"Saving cells {type(cells)} in path: {fname}")
             save_cells(cells, os.path.join(save_path, fname))
             block += 1
 
