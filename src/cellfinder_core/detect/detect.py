@@ -44,6 +44,8 @@ def main(
     end_plane,
     save_path,
     chunk_size,
+    block,
+    holdover,
     voxel_sizes,
     soma_diameter,
     max_cluster_size,
@@ -101,7 +103,7 @@ def main(
         ball_overlap_fraction,
         start_plane,
     ]
-
+    
     # Create 3D analysis filter
     mp_3d_filter = VolumeFilter(
         soma_diameter=soma_diameter,
@@ -114,6 +116,8 @@ def main(
         max_cluster_size=max_cluster_size,
         outlier_keep=outlier_keep,
         artifact_keep=artifact_keep,
+        block=block,
+        holdover=holdover,
     )
 
     clipping_val, threshold_value = setup_tile_filtering(signal_array[0, :, :])
@@ -131,7 +135,6 @@ def main(
     # Start 2D filter
     # Submits each plane to the worker pool, and sets up a list of
     # asyncronous results
-    block = 1
     async_results = []
 
     print("Start Modified Loop")
@@ -147,7 +150,7 @@ def main(
 
             # Start 3D filter
             # This runs in the main thread
-            cells = mp_3d_filter.process(
+            cells, holdover = mp_3d_filter.process(
                 async_results=async_results,
                 callback=callback
             )
@@ -157,7 +160,6 @@ def main(
             fname = 'cells_block_' + str(block) + '.xml'
             print(f"Saving cells {type(cells)} in path: {fname}")
             save_cells(cells, os.path.join(save_path, fname))
-            block += 1
 
     print(
         "Detection complete - all planes done in : {}".format(
@@ -165,5 +167,4 @@ def main(
         )
     )
     
-    cells = []
-    return cells
+    return holdover

@@ -42,6 +42,8 @@ class VolumeFilter(object):
         max_cluster_size: int = 5000,
         outlier_keep: bool = False,
         artifact_keep: bool = True,
+        block: int,
+        holdover: dict
     ):
         self.soma_diameter = soma_diameter
         self.soma_size_spread_factor = soma_size_spread_factor
@@ -58,49 +60,41 @@ class VolumeFilter(object):
         self.threshold_value = None
         self.setup_params = setup_params
         
-        self.ball_filter, _ = setup(
-            self.setup_params[0],
-            self.setup_params[1],
-            self.setup_params[2],
-            self.setup_params[3],
-            ball_overlap_fraction=self.setup_params[4],
-            z_offset=self.setup_params[5],
-        )
-        
         # Needed to handle ROIs present at data splits: NL 12/07/22
-        self.holdover = defaultdict(dict) 
+        self.holdover = holdover
+        
+        if block == 0:
+            self.ball_filter, self.cell_detector  = setup(
+                self.setup_params[0],
+                self.setup_params[1],
+                self.setup_params[2],
+                self.setup_params[3],
+                ball_overlap_fraction=self.setup_params[4],
+                z_offset=self.setup_params[5],
+            )
+            self.holdover['cells'] = {}
+        else:
+            self.ball_filter = self.holdover['ball_filt']
+            self.z = self.holdover['z']
+            self.setup_params[5] = self.holdover['z'] - int(math.floor(self.setup_params[3] / 2)) - 1
+            
+            _, self.cell_detector  = setup(
+                self.setup_params[0],
+                self.setup_params[1],
+                self.setup_params[2],
+                self.setup_params[3],
+                ball_overlap_fraction=self.setup_params[4],
+                z_offset=self.setup_params[5],
+            )
+            
+            previous_img, struct_id = self.holdover['previous_img'], self.holdover['next_id']
+            self.cell_detector.set_previous_params(previous_img, struct_id, self.holdover['cells'])
         
     def process(
         self,
         async_results: List[AsyncResult],
         callback: Callable[[int], None],
     ):
-        
-        
-        print("setup offset = {0} and volumefilter z = {1}".format(self.setup_params[5], self.z))
-        previous_img = []
-        
-        
-        if not self.setup_params[5] == self.z:
-            self.setup_params[5] = self.z - int(math.floor(self.setup_params[3] / 2)) - 1
-            previous_img, struct_id = self.cell_detector.get_previous_layer(), self.cell_detector.get_next_structure_id()
-            print('Reset z_offset to: {0}'.format(self.setup_params[5]))
-
-        
-        # reset cell detector after split to prevent memory crashes: NL 12/07/22
-        _, self.cell_detector = setup(
-            self.setup_params[0],
-            self.setup_params[1],
-            self.setup_params[2],
-            self.setup_params[3],
-            ball_overlap_fraction = self.setup_params[4],
-            z_offset = self.setup_params[5],
-        )
-        
-        # Populate new cell detector with heldover ROIs: NL 12/07/22
-        if len(previous_img) > 0:
-            self.cell_detector.set_previous_params(previous_img, struct_id, dict(self.holdover))
-            self.holdover = defaultdict(dict)
         
         progress_bar = tqdm(
             total=len(async_results), desc="Processing planes"
@@ -147,13 +141,20 @@ class VolumeFilter(object):
             callback(self.z)
             self.z += 1
             progress_bar.update()
-
+        
+        # get parameters to holdover for next loop
+        self.holdover["ball_filt"] = self.ball_filter
+        self.holdover["z"] =  self.z
+        self.holdover["previous_img"] = self.cell_detector.get_previous_layer()
+        self.holdover["next_id"] = self.cell_detector.get_next_structure_id()
+        
         progress_bar.close()
         t.join()
         logging.debug("3D filter done")
-        print(self.z)
-        print(self.planes_paths_range.shape[0])
-        return self.get_results()
+
+        cells = self.get_results()
+        
+        return cells, self.holdover
 
     def save_plane(self, plane):
         plane_name = f"plane_{str(self.z).zfill(4)}.tif"
@@ -177,9 +178,9 @@ class VolumeFilter(object):
             
             #If ROI has instance on plane before a split, save for next chunk and skip rest of function: NL 12/07/22
             cell_loc = pd.DataFrame(cell_points)
-            if max(cell_loc['z']) == self.z - int(math.floor(self.setup_params[3] / 2)) and self.z < self.planes_paths_range.shape[0]:
-                self.holdover[cell_id] = cell_points
-                print(cell_id)
+
+            if max(cell_loc['z']) == self.z - int(math.floor(self.setup_params[3] / 2)):
+                self.holdover['cells'][cell_id] = cell_points
                 continue 
                 
             if cell_volume < max_cell_volume:
