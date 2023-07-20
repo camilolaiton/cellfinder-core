@@ -6,7 +6,7 @@ from typing import Callable
 from datetime import datetime
 from multiprocessing.pool import Pool
 
-from imlib.IO.cells import save_cells
+from imlib.IO.cells import save_cells, get_cells
 from imlib.general.system import get_num_processes
 from cellfinder_core.detect.filters.plane import TileProcessor
 from cellfinder_core.detect.filters.setup_filters import setup_tile_filtering
@@ -37,15 +37,11 @@ def calculate_parameters_in_pixels(
 
     return soma_diameter, max_cluster_size, ball_xy_size, ball_z_size
 
-
 def main(
     signal_array,
     start_plane,
     end_plane,
     save_path,
-    chunk_size,
-    block,
-    holdover,
     voxel_sizes,
     soma_diameter,
     max_cluster_size,
@@ -56,6 +52,10 @@ def main(
     n_free_cpus,
     log_sigma_size,
     n_sds_above_mean_thresh,
+    block=0,
+    chunk_size=None,
+    holdover=None,
+    offset=[0, 0, 0],
     outlier_keep=False,
     artifact_keep=False,
     save_planes=False,
@@ -136,7 +136,10 @@ def main(
     # Submits each plane to the worker pool, and sets up a list of
     # asyncronous results
     async_results = []
-
+    
+    if isinstance(chunk_size, type(None)):
+        chunk_size = signal_array.shape[0]
+    
     print("Start Modified Loop")
     for id, plane in enumerate(signal_array):
         res = worker_pool.apply_async(
@@ -156,15 +159,25 @@ def main(
             )
             async_results = []
             
+            
+            if max(offset) > 0:
+                for c, cell in enumerate(cells):
+                    cell.x += offset[0]
+                    cell.y += offset[1]
+                    cell.z += offset[2]
+                    cells[c] = cell
+            
             # save the blocks 
             fname = 'cells_block_' + str(block) + '.xml'
             print(f"Saving cells {type(cells)} in path: {fname}")
             save_cells(cells, os.path.join(save_path, fname))
-
     print(
         "Detection complete - all planes done in : {}".format(
             datetime.now() - start_time
         )
     )
     
-    return holdover
+    if isinstance(holdover, dict):
+        return holdover
+    else:
+        return len(cells)

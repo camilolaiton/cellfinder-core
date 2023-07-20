@@ -43,7 +43,7 @@ class VolumeFilter(object):
         outlier_keep: bool = False,
         artifact_keep: bool = True,
         block: int,
-        holdover: dict
+        holdover: dict = None
     ):
         self.soma_diameter = soma_diameter
         self.soma_size_spread_factor = soma_size_spread_factor
@@ -63,7 +63,17 @@ class VolumeFilter(object):
         # Needed to handle ROIs present at data splits: NL 12/07/22
         self.holdover = holdover
         
-        if block == 0:
+        
+        if isinstance(self.holdover, type(None)):
+            self.ball_filter, self.cell_detector  = setup(
+                self.setup_params[0],
+                self.setup_params[1],
+                self.setup_params[2],
+                self.setup_params[3],
+                ball_overlap_fraction=self.setup_params[4],
+                z_offset=self.setup_params[5],
+            )
+        elif block == 0:
             self.ball_filter, self.cell_detector  = setup(
                 self.setup_params[0],
                 self.setup_params[1],
@@ -120,7 +130,7 @@ class VolumeFilter(object):
                 if self.save_planes:
                     self.save_plane(middle_plane)
                 
-                # make sure previous thread is finished prior to creadng new one
+                # make sure previous thread is finished prior to creating new one
                 if isinstance(t, int):
                     pass
                 else:
@@ -143,17 +153,20 @@ class VolumeFilter(object):
             progress_bar.update()
         
         # get parameters to holdover for next loop
-        self.holdover["ball_filt"] = self.ball_filter
-        self.holdover["z"] =  self.z
-        self.holdover["previous_img"] = self.cell_detector.get_previous_layer()
-        self.holdover["next_id"] = self.cell_detector.get_next_structure_id()
+        if isinstance(self.holdover, dict):
+            self.holdover["ball_filt"] = self.ball_filter
+            self.holdover["z"] =  self.z
+            self.holdover["previous_img"] = self.cell_detector.get_previous_layer()
+            self.holdover["next_id"] = self.cell_detector.get_next_structure_id()
+
         
         progress_bar.close()
         t.join()
         logging.debug("3D filter done")
+        
 
         cells = self.get_results()
-        
+
         return cells, self.holdover
 
     def save_plane(self, plane):
@@ -178,8 +191,8 @@ class VolumeFilter(object):
             
             #If ROI has instance on plane before a split, save for next chunk and skip rest of function: NL 12/07/22
             cell_loc = pd.DataFrame(cell_points)
-
-            if max(cell_loc['z']) == self.z - int(math.floor(self.setup_params[3] / 2)):
+            
+            if isinstance(self.holdover, dict) and max(cell_loc['z']) == self.z - int(math.floor(self.setup_params[3] / 2)):
                 self.holdover['cells'][cell_id] = cell_points
                 continue 
                 
