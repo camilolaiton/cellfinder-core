@@ -4,7 +4,7 @@ import numpy as np
 
 from typing import Callable
 from datetime import datetime
-from multiprocessing.pool import Pool
+#from multiprocessing.pool import Pool
 
 from imlib.IO.cells import save_cells, get_cells
 from imlib.general.system import get_num_processes
@@ -132,7 +132,7 @@ def main(
     
     '''
     Commented out do to running inside delayed
-    worker_pool = Pool(n_processes)
+    #worker_pool = Pool(n_processes)
     '''
     
     # Start 2D filter

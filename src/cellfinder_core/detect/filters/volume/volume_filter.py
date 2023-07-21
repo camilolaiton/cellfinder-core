@@ -4,7 +4,7 @@ import logging
 import threading
 
 from typing import Callable, List, Sequence
-from multiprocessing.pool import AsyncResult
+#from multiprocessing.pool import AsyncResult
 
 import numpy as np
 import pandas as pd
