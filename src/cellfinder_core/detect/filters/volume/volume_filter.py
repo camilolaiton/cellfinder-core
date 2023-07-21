@@ -102,7 +102,7 @@ class VolumeFilter(object):
         
     def process(
         self,
-        async_results: List[AsyncResult],
+        async_results: List[list], #List[AsyncResult],
         callback: Callable[[int], None],
     ):
         
@@ -113,7 +113,7 @@ class VolumeFilter(object):
         t = 0
         
         for plane_id, res in enumerate(async_results):
-            plane, mask = res.get()
+            plane, mask = res[0], res[1]#res.get()
             logging.debug(f"Plane {plane_id} received for 3D filtering")
             print(f"Plane {plane_id} received for 3D filtering")
 
@@ -138,10 +138,14 @@ class VolumeFilter(object):
                     
                 logging.debug(f"Detecting structures for plane {plane_id}")
                 
+                '''
+                Removing threading since it is being run within a delayed 
+                function and cannot do both
                 # Start on separate thread so the next ballfilter.walk() instance can start: NL 12/21/22
                 t = threading.Thread(target = process_thread, args = (self.cell_detector, middle_plane))
                 t.start()
-
+                '''
+                
                 logging.debug(f"Structures done for plane {plane_id}")
                 logging.debug(
                     f"Skipping plane {plane_id} for 3D filter"
@@ -161,7 +165,7 @@ class VolumeFilter(object):
 
         
         progress_bar.close()
-        t.join()
+        #t.join()
         logging.debug("3D filter done")
         
 

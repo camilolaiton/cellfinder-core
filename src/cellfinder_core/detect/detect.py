@@ -130,8 +130,11 @@ def main(
         n_sds_above_mean_thresh,
     )
     
+    '''
+    Commented out do to running inside delayed
     worker_pool = Pool(n_processes)
-
+    '''
+    
     # Start 2D filter
     # Submits each plane to the worker pool, and sets up a list of
     # asyncronous results
@@ -142,9 +145,16 @@ def main(
     
     print("Start Modified Loop")
     for id, plane in enumerate(signal_array):
+        
+        '''
+        Since running insice of a delayed function cannot use additional MP
+        tools. This is the original code
         res = worker_pool.apply_async(
             mp_tile_processor.get_tile_mask, args=(np.array(plane),)
         )
+        '''
+        
+        res = mp_tile_processor.get_tile_mask(plane)
         async_results.append(res)
 
         if len(async_results) % chunk_size == 0 or id == signal_array.shape[0] - 1:
