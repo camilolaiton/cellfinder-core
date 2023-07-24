@@ -168,7 +168,7 @@ def main(
                 callback=callback
             )
             async_results = []
-            
+            print("This block has {0} cells".format(len(cells)))
             
             if max(offset) > 0:
                 for c, cell in enumerate(cells):
@@ -187,7 +187,4 @@ def main(
         )
     )
     
-    if isinstance(holdover, dict):
-        return holdover
-    else:
-        return len(cells)
+    return holdover, len(cells)
