@@ -137,6 +137,7 @@ class VolumeFilter(object):
                     t.join()
                     
                 logging.debug(f"Detecting structures for plane {plane_id}")
+                self.cell_detector.process(middle_plane)
                 
                 '''
                 Removing threading since it is being run within a delayed 
