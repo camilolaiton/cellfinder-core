@@ -170,12 +170,12 @@ def main(
             async_results = []
             print("This block has {0} cells".format(len(cells)))
             
-            if max(offset) > 0:
-                for c, cell in enumerate(cells):
-                    cell.x += offset[0] - soma_diameter
-                    cell.y += offset[1] - soma_diameter
-                    cell.z += offset[2] - soma_diameter
-                    cells[c] = cell
+            #if max(offset) > 0:
+            #    for c, cell in enumerate(cells):
+            #        cell.x += offset[0] - soma_diameter
+            #        cell.y += offset[1] - soma_diameter
+            #        cell.z += offset[2] - soma_diameter
+            #        cells[c] = cell
             
             # save the blocks 
             fname = 'cells_block_' + str(block) + '.xml'
