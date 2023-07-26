@@ -173,18 +173,19 @@ def main(
             
             if max(offset) > 0:
                 for c, cell in enumerate(cells):
-                    cell.x -= padding
-                    cell.y -= padding
-                    cell.z -= padding
+                    loc = [
+                        cell.x - padding,
+                        cell.y - padding,
+                        cell.z - padding
+                    ]
                     
-                    loc = [cell.x, cell.y, cell.z]
-                    
-                    if min(loc) < 0 or max(loc) > plane.shape[0]:
+                                        
+                    if min(loc) < 0 or max([l - s for l, s in zip(loc, signal_array.shape)]) > 0:
                         pass
                     else:
-                        cell.x += offset[0]
-                        cell.y += offset[1]
-                        cell.z += offset[2]
+                        cell.x = loc[0] + offset[0]
+                        cell.y = loc[1] + offset[1]
+                        cell.z = loc[2] + offset[2]
                 
                         cells[c] = cell
             
