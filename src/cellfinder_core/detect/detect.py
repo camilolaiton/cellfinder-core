@@ -52,6 +52,7 @@ def main(
     n_free_cpus,
     log_sigma_size,
     n_sds_above_mean_thresh,
+    padding = 0,
     block=0,
     chunk_size=None,
     holdover=None,
@@ -172,10 +173,20 @@ def main(
             
             if max(offset) > 0:
                 for c, cell in enumerate(cells):
-                    cell.x += offset[0] #- soma_diameter
-                    cell.y += offset[1] #- soma_diameter
-                    cell.z += offset[2] #- soma_diameter
-                    cells[c] = cell
+                    cell.x -= padding
+                    cell.y -= padding
+                    cell.z -= padding
+                    
+                    loc = [cell.x, cell.y, cell.z]
+                    
+                    if min(loc) < 0 or max(loc) > plane.shape[0]:
+                        pass
+                    else:
+                        cell.x += offset[0]
+                        cell.y += offset[1]
+                        cell.z += offset[2]
+                
+                        cells[c] = cell
             
             # save the blocks 
             fname = 'cells_block_' + str(block) + '.xml'
