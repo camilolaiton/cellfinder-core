@@ -180,7 +180,7 @@ def main(
                     ]
                     
                                         
-                    if min(loc) < 0 or max([l - s for l, s in zip(loc, signal_array.shape)]) > 0:
+                    if min(loc) < 0 or max([l - (s - 2 * padding) for l, s in zip(loc, signal_array.shape)]) > 0:
                         pass
                     else:
                         cell.x = loc[0] + offset[0]
