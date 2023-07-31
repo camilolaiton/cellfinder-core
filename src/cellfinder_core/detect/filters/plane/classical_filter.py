@@ -8,15 +8,16 @@ def enhance_peaks(img, clipping_value, gaussian_sigma=2.5):
     filtered_img = medfilt2d(img.astype(np.float64))
     filtered_img = gaussian_filter(filtered_img, gaussian_sigma)
     filtered_img = laplace(filtered_img)
+    
     filtered_img *= -1
+    
+    if filtered_img.max() == 0:
+        filtered_img *= -1
 
     filtered_img -= filtered_img.min()
     filtered_img = np.nan_to_num(filtered_img)
-    
-    if filtered_img.max() == 0:
-        pass
-    else:
-        filtered_img /= filtered_img.max()
+        
+    filtered_img /= filtered_img.max()
 
     # To leave room to label in the 3d detection.
     filtered_img *= clipping_value
