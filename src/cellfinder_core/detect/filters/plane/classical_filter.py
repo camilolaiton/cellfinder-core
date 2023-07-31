@@ -11,6 +11,7 @@ def enhance_peaks(img, clipping_value, gaussian_sigma=2.5):
     filtered_img *= -1
 
     filtered_img -= filtered_img.min()
+    filtered_img = np.nan_to_num(filtered_img)
     
     if filtered_img.max() == 0:
         pass
