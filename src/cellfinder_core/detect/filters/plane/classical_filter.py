@@ -11,7 +11,11 @@ def enhance_peaks(img, clipping_value, gaussian_sigma=2.5):
     filtered_img *= -1
 
     filtered_img -= filtered_img.min()
-    filtered_img /= filtered_img.max()
+    
+    if filtered_img.max() == 0:
+        pass
+    else:
+        filtered_img /= filtered_img.max()
 
     # To leave room to label in the 3d detection.
     filtered_img *= clipping_value
