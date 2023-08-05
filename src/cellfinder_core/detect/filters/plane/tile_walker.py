@@ -8,13 +8,14 @@ from cellfinder_core.detect.filters.plane.base_tile_filter import (
 
 
 class TileWalker(object):
-    def __init__(self, img, soma_diameter):
+    def __init__(self, img, soma_diameter, by = 'plane'):
         self.img = img
         self.thresholded_img = img.copy()
         self.img_width, self.img_height = img.shape
         self.soma_diameter = soma_diameter
         self.tile_width = self.soma_diameter * 2
         self.tile_height = self.soma_diameter * 2
+        self.processed_by = by
 
         n_tiles_width = math.ceil(self.img_width / self.tile_width)
         n_tiles_height = math.ceil(self.img_height / self.tile_height)
@@ -60,13 +61,14 @@ class TileWalker(object):
             self.ftf.set_tile(tile)
             
             # This is good if not done blockwise
-            #if self.ftf.out_of_brain_intensity_threshold:
-            #    if not self.ftf.is_low_average():
-            #        mask_x = self.x // self.tile_width
-            #        mask_y = self.y // self.tile_height
-            #        self.good_tiles_mask[mask_x, mask_y] = True
-            
-            # if blockwise safer to just do all tiles
-            mask_x = self.x // self.tile_width
-            mask_y = self.y // self.tile_height
-            self.good_tiles_mask[mask_x, mask_y] = True
+            if self.processed_by == 'plane':
+                if self.ftf.out_of_brain_intensity_threshold:
+                    if not self.ftf.is_low_average():
+                        mask_x = self.x // self.tile_width
+                        mask_y = self.y // self.tile_height
+                        self.good_tiles_mask[mask_x, mask_y] = True
+            elif self.processed_by == 'block':
+                # if blockwise safer to just do all tiles
+                mask_x = self.x // self.tile_width
+                mask_y = self.y // self.tile_height
+                self.good_tiles_mask[mask_x, mask_y] = True
