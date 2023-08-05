@@ -57,6 +57,7 @@ def main(
     chunk_size=None,
     holdover=None,
     offset=[0, 0, 0],
+    process_by='plane',
     outlier_keep=False,
     artifact_keep=False,
     save_planes=False,
@@ -129,6 +130,7 @@ def main(
         soma_diameter,
         log_sigma_size,
         n_sds_above_mean_thresh,
+        process_by,
     )
     
     '''

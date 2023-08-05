@@ -14,6 +14,7 @@ class TileProcessor:
     soma_diameter: float
     log_sigma_size: float
     n_sds_above_mean_thresh: float
+    process_by: str
 
     def get_tile_mask(
         self, plane: np.ndarray
@@ -25,7 +26,7 @@ class TileProcessor:
         plane = plane.T
         np.clip(plane, 0, self.clipping_value, out=plane)
 
-        walker = TileWalker(plane, self.soma_diameter)
+        walker = TileWalker(plane, self.soma_diameter, self.process_by)
 
         walker.walk_out_of_brain_only()
 
