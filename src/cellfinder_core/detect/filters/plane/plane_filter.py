@@ -34,6 +34,7 @@ class TileProcessor:
             walker.thresholded_img,
             self.clipping_value,
             gaussian_sigma=laplace_gaussian_sigma,
+            stats[1]
         )
 
         # threshold
@@ -41,8 +42,8 @@ class TileProcessor:
             avg = thresholded_img.ravel().mean()
             sd = thresholded_img.ravel().std()
         else:
-            avg = stats[1]
-            sd = stats[2]
+            avg = stats[2]
+            sd = stats[3]
 
         plane[
             thresholded_img > avg + self.n_sds_above_mean_thresh * sd
