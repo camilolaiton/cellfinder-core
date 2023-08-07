@@ -192,7 +192,10 @@ def main(
                     cell.x = loc[0] + offset[0]
                     cell.y = loc[1] + offset[1]
                     cell.z = loc[2] + offset[2]
-            
+                    
+                    if cell.type == -1:
+                        cell.type = 1
+                    
                     good_cells.append(cell)
             
             print("This block has {0} cells".format(len(good_cells)))
