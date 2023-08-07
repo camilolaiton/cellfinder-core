@@ -175,7 +175,7 @@ def main(
                 callback=callback
             )
             async_results = []
-            print("This block has {0} cells".format(len(cells)))
+           
             
             good_cells = []
             for c, cell in enumerate(cells):
@@ -194,6 +194,8 @@ def main(
                     cell.z = loc[2] + offset[2]
             
                     good_cells.append(cell)
+            
+            print("This block has {0} cells".format(len(good_cells)))
             
             # save the blocks 
             fname = 'cells_block_' + str(block) + '.xml'
