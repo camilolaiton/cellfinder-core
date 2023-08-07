@@ -34,7 +34,7 @@ class TileProcessor:
             walker.thresholded_img,
             self.clipping_value,
             gaussian_sigma=laplace_gaussian_sigma,
-            stats[1]
+            plane_max=stats[1]
         )
 
         # threshold
