@@ -17,7 +17,7 @@ class TileProcessor:
     process_by: str
 
     def get_tile_mask(
-        self, plane: np.ndarray
+        self, plane: np.ndarray, stats: np.array
     ) -> Tuple[np.ndarray, np.ndarray]:
         """
         Warning: this modifies ``plane`` in place.
@@ -37,8 +37,12 @@ class TileProcessor:
         )
 
         # threshold
-        avg = thresholded_img.ravel().mean()
-        sd = thresholded_img.ravel().std()
+        if isinstance(stats, type(None)):
+            avg = thresholded_img.ravel().mean()
+            sd = thresholded_img.ravel().std()
+        else:
+            avg = stats[1]
+            sd = stats[2]
 
         plane[
             thresholded_img > avg + self.n_sds_above_mean_thresh * sd

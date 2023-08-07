@@ -57,6 +57,7 @@ def main(
     chunk_size=None,
     holdover=None,
     offset=[0, 0, 0],
+    stats=None,
     process_by='plane',
     outlier_keep=False,
     artifact_keep=False,
@@ -145,9 +146,12 @@ def main(
     
     if isinstance(chunk_size, type(None)):
         chunk_size = signal_array.shape[0]
+        
+    if isinstance(stats, type(None)):
+        stats = [None for i in range(signal_array.shape[0])]
     
     print("Start Modified Loop")
-    for id, plane in enumerate(signal_array):
+    for id, plane in enumerate(zip(signal_array, stats)):
         
         '''
         Since running insice of a delayed function cannot use additional MP
@@ -157,7 +161,7 @@ def main(
         )
         '''
         
-        res = mp_tile_processor.get_tile_mask(plane)
+        res = mp_tile_processor.get_tile_mask(*plane)
         async_results.append(res)
 
         if len(async_results) % chunk_size == 0 or id == signal_array.shape[0] - 1:
