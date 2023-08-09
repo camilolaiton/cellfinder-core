@@ -178,7 +178,7 @@ def main(
             async_results = []
            
             
-            good_cells = []
+            bad_cells = []
             for c, cell in enumerate(cells):
                 loc = [
                     cell.x - padding,
@@ -188,7 +188,7 @@ def main(
                     
                                         
                 if min(loc) < 0 or max([l - (s - 2 * padding) for l, s in zip(loc, signal_array.shape[::-1])]) > 0:
-                    pass
+                    bad_cells.append(c)
                 else:
                     cell.x = loc[0] + offset[0]
                     cell.y = loc[1] + offset[1]
@@ -197,20 +197,21 @@ def main(
                     if cell.type == -1:
                         cell.type = 1
                     
-                    good_cells.append(cell)
+                    cells[c] = cell
             
-            print("This block has {0} cells".format(len(good_cells)))
+            for c in bad_cells[::-1]:
+                cells.pop(c)
+            
+            print("This block has {0} cells".format(len(cells)))
             
             # save the blocks 
             fname = 'cells_block_' + str(block) + '.xml'
             print(f"Saving cells {type(cells)} in path: {fname}")
-            save_cells(good_cells, os.path.join(save_path, fname))
+            save_cells(cells, os.path.join(save_path, fname))
     print(
         "Detection complete - all planes done in : {}".format(
             datetime.now() - start_time
         )
     )
-    
-    del cells
-    
-    return holdover, len(good_cells)
+        
+    return holdover, len(cells)
