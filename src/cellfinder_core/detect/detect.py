@@ -52,12 +52,10 @@ def main(
     n_free_cpus,
     log_sigma_size,
     n_sds_above_mean_thresh,
+    stats,
     padding = 0,
     block=0,
-    chunk_size=None,
-    holdover=None,
     offset=[0, 0, 0],
-    stats=None,
     process_by='plane',
     outlier_keep=False,
     artifact_keep=False,
@@ -120,10 +118,10 @@ def main(
         outlier_keep=outlier_keep,
         artifact_keep=artifact_keep,
         block=block,
-        holdover=holdover,
     )
 
     clipping_val, threshold_value = setup_tile_filtering(signal_array[0, :, :])
+    
     # Create 2D analysis filter
     mp_tile_processor = TileProcessor(
         clipping_val,
@@ -131,87 +129,66 @@ def main(
         soma_diameter,
         log_sigma_size,
         n_sds_above_mean_thresh,
-        process_by,
+        process_by,  
     )
     
-    '''
-    Commented out do to running inside delayed
-    #worker_pool = Pool(n_processes)
-    '''
-    
+
     # Start 2D filter
     # Submits each plane to the worker pool, and sets up a list of
     # asyncronous results
     async_results = []
     
-    if isinstance(chunk_size, type(None)):
-        chunk_size = signal_array.shape[0]
-        
-    if isinstance(stats, type(None)):
-        stats = [[None, None, None, None] for i in range(signal_array.shape[0])]
-        stats = np.array(stats)
-    
     print("Start Modified Loop")
-    for id, plane_data in enumerate(zip(signal_array, stats)):
+    count = 0
+    for plane, stat in zip(signal_array, stats):
         
-        '''
-        Since running insice of a delayed function cannot use additional MP
-        tools. This is the original code
-        res = worker_pool.apply_async(
-            mp_tile_processor.get_tile_mask, args=(np.array(plane),)
-        )
-        '''
-        
-        res = mp_tile_processor.get_tile_mask(plane_data[0], plane_data[1])
+        res = mp_tile_processor.get_tile_mask(plane, stat)
         async_results.append(res)
-
-        if len(async_results) % chunk_size == 0 or id == signal_array.shape[0] - 1:
             
-            print('Offloading data on plane {0}'.format(id))
+    print('Offloading data on plane {0}'.format(count))
 
-            # Start 3D filter
-            # This runs in the main thread
-            cells, holdover = mp_3d_filter.process(
-                async_results=async_results,
-                callback=callback
-            )
-            async_results = []
+    # Start 3D filter
+    # This runs in the main thread
+    cells = mp_3d_filter.process(
+        async_results=async_results,
+        callback=callback
+        )
+    
+    del async_results
            
-            
-            bad_cells = []
-            for c, cell in enumerate(cells):
-                loc = [
-                    cell.x - padding,
-                    cell.y - padding,
-                    cell.z - padding
-                ]
+    bad_cells = []
+    for c, cell in enumerate(cells):
+        loc = [
+            cell.x - padding,
+            cell.y - padding,
+            cell.z - padding
+            ]
+        
+        if min(loc) < 0 or max([l - (s - 2 * padding) for l, s in zip(loc, signal_array.shape[::-1])]) > 0:
+            bad_cells.append(c)
+        else:
+            cell.x = loc[0] + offset[0]
+            cell.y = loc[1] + offset[1]
+            cell.z = loc[2] + offset[2]
                     
-                                        
-                if min(loc) < 0 or max([l - (s - 2 * padding) for l, s in zip(loc, signal_array.shape[::-1])]) > 0:
-                    bad_cells.append(c)
-                else:
-                    cell.x = loc[0] + offset[0]
-                    cell.y = loc[1] + offset[1]
-                    cell.z = loc[2] + offset[2]
+            if cell.type == -1:
+                cell.type = 1
                     
-                    if cell.type == -1:
-                        cell.type = 1
-                    
-                    cells[c] = cell
+            cells[c] = cell
             
-            for c in bad_cells[::-1]:
-                cells.pop(c)
+    for c in bad_cells[::-1]:
+        cells.pop(c)
             
-            print("This block has {0} cells".format(len(cells)))
+    print("This block has {0} cells".format(len(cells)))
             
-            # save the blocks 
-            fname = 'cells_block_' + str(block) + '.xml'
-            print(f"Saving cells {type(cells)} in path: {fname}")
-            save_cells(cells, os.path.join(save_path, fname))
+    # save the blocks 
+    fname = 'cells_block_' + str(block) + '.xml'
+    print(f"Saving cells {type(cells)} in path: {fname}")
+    save_cells(cells, os.path.join(save_path, fname))
     print(
         "Detection complete - all planes done in : {}".format(
             datetime.now() - start_time
         )
     )
         
-    return holdover, len(cells)
+    return len(cells)
