@@ -47,7 +47,6 @@ def main(
     log_sigma_size,
     n_sds_above_mean_thresh,
     stats,
-    block=0,
     process_by='plane',
     outlier_keep=False,
     artifact_keep=False,
@@ -130,14 +129,12 @@ def main(
     async_results = []
     
     print("Start Modified Loop")
-    count = 0
+
     for plane, stat in zip(signal_array, stats):
         
         res = mp_tile_processor.get_tile_mask(plane, stat)
         async_results.append(res)
             
-    print('Offloading data on plane {0}'.format(count))
-
     # Start 3D filter
     # This runs in the main thread
     cells = mp_3d_filter.process(
