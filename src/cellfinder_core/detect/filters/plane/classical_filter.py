@@ -13,9 +13,9 @@ def enhance_peaks(img, clipping_value, gaussian_sigma=2.5, plane_max = None):
     filtered_img -= filtered_img.min()
     filtered_img = np.nan_to_num(filtered_img)
     
-    if isinstance(plane_max, type(None)) and filtered_img.max() != 0:
+    if isinstance(plane_max, type(None)):
         filtered_img /= filtered_img.max()
-    elif filtered_img.max() != 0:
+    else:
         filtered_img /= plane_max
 
     # To leave room to label in the 3d detection.

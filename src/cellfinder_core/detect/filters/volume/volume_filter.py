@@ -32,7 +32,6 @@ class VolumeFilter(object):
         max_cluster_size: int = 5000,
         outlier_keep: bool = False,
         artifact_keep: bool = True,
-        block: int,
     ):
         self.soma_diameter = soma_diameter
         self.soma_size_spread_factor = soma_size_spread_factor

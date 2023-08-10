@@ -1,13 +1,7 @@
 
-import os
-import numpy as np
-
 from typing import Callable
 from datetime import datetime
-#from multiprocessing.pool import Pool
 
-from imlib.IO.cells import save_cells, get_cells
-from imlib.general.system import get_num_processes
 from cellfinder_core.detect.filters.plane import TileProcessor
 from cellfinder_core.detect.filters.setup_filters import setup_tile_filtering
 from cellfinder_core.detect.filters.volume.volume_filter import VolumeFilter
@@ -53,9 +47,7 @@ def main(
     log_sigma_size,
     n_sds_above_mean_thresh,
     stats,
-    padding = 0,
     block=0,
-    offset=[0, 0, 0],
     process_by='plane',
     outlier_keep=False,
     artifact_keep=False,
@@ -71,7 +63,6 @@ def main(
         A callback function that is called every time a plane has finished
         being processed. Called with the plane number that has finished.
     """
-    n_processes = get_num_processes(min_free_cpu_cores=n_free_cpus)
     start_time = datetime.now()
 
     (
@@ -89,6 +80,7 @@ def main(
 
     if end_plane == -1:
         end_plane = len(signal_array)
+        
     signal_array = signal_array[start_plane:end_plane]
 
     callback = callback or (lambda *args, **kwargs: None)
@@ -117,7 +109,6 @@ def main(
         max_cluster_size=max_cluster_size,
         outlier_keep=outlier_keep,
         artifact_keep=artifact_keep,
-        block=block,
     )
 
     clipping_val, threshold_value = setup_tile_filtering(signal_array[0, :, :])
@@ -155,40 +146,11 @@ def main(
         )
     
     del async_results
-           
-    bad_cells = []
-    for c, cell in enumerate(cells):
-        loc = [
-            cell.x - padding,
-            cell.y - padding,
-            cell.z - padding
-            ]
-        
-        if min(loc) < 0 or max([l - (s - 2 * padding) for l, s in zip(loc, signal_array.shape[::-1])]) > 0:
-            bad_cells.append(c)
-        else:
-            cell.x = loc[0] + offset[0]
-            cell.y = loc[1] + offset[1]
-            cell.z = loc[2] + offset[2]
-                    
-            if cell.type == -1:
-                cell.type = 1
-                    
-            cells[c] = cell
-            
-    for c in bad_cells[::-1]:
-        cells.pop(c)
-            
+         
     print("This block has {0} cells".format(len(cells)))
-            
-    # save the blocks 
-    fname = 'cells_block_' + str(block) + '.xml'
-    print(f"Saving cells {type(cells)} in path: {fname}")
-    save_cells(cells, os.path.join(save_path, fname))
     print(
         "Detection complete - all planes done in : {}".format(
             datetime.now() - start_time
         )
     )
-        
-    return len(cells)
+    return cells
