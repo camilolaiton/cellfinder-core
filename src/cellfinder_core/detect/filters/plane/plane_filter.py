@@ -31,7 +31,7 @@ class TileProcessor:
         #walker.walk_out_of_brain_only()
 
         thresholded_img = enhance_peaks(
-            plane.copt(), #walker.thresholded_img,
+            plane.copy(), #walker.thresholded_img,
             self.clipping_value,
             gaussian_sigma=laplace_gaussian_sigma,
             plane_max=stats[1]
