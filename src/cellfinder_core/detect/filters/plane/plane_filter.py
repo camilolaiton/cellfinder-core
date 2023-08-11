@@ -4,7 +4,7 @@ from typing import Tuple
 import numpy as np
 
 from cellfinder_core.detect.filters.plane.classical_filter import enhance_peaks
-#from cellfinder_core.detect.filters.plane.tile_walker import TileWalker
+from cellfinder_core.detect.filters.plane.tile_walker import TileWalker
 
 
 @dataclass
@@ -26,12 +26,12 @@ class TileProcessor:
         plane = plane.T
         np.clip(plane, 0, self.clipping_value, out=plane)
 
-        #walker = TileWalker(plane, self.soma_diameter, self.process_by)
+        walker = TileWalker(plane, self.soma_diameter, self.process_by)
 
-        #walker.walk_out_of_brain_only()
+        walker.walk_out_of_brain_only()
 
         thresholded_img = enhance_peaks(
-            plane.copy(), #walker.thresholded_img,
+            walker.thresholded_img,
             self.clipping_value,
             gaussian_sigma=laplace_gaussian_sigma,
             plane_max=stats[1]
@@ -48,4 +48,4 @@ class TileProcessor:
         plane[
             thresholded_img > avg + self.n_sds_above_mean_thresh * sd
         ] = self.threshold_value
-        return plane, np.ones((plane.shape), dtype="uint8") #walker.good_tiles_mask.astype(np.uint8)
+        return plane, walker.good_tiles_mask.astype(np.uint8)
