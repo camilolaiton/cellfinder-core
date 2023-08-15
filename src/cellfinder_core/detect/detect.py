@@ -134,7 +134,8 @@ def main(
         
         res = mp_tile_processor.get_tile_mask(plane, stat)
         async_results.append(res)
-            
+    
+    del mp_tile_processor        
     # Start 3D filter
     # This runs in the main thread
     cells = mp_3d_filter.process(
