@@ -74,7 +74,7 @@ class VolumeFilter(object):
             logging.debug(f"Adding plane {plane_id} for 3D filtering")
             self.ball_filter.append(res[0], res[1])
             
-            del res[0], res[1]
+            del res
             
             if self.ball_filter.ready:
 
