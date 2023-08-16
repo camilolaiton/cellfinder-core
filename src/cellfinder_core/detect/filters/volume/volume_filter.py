@@ -164,7 +164,7 @@ class VolumeFilter(object):
                                 cell_centre["y"],
                                 cell_centre["z"],
                             ),
-                            Cell.ARTIFACT,
+                            Cell.UNKNOWN, # removed Cell.ARTIFACT due to error if only cell was an artifact
                         )
                     )
                     
