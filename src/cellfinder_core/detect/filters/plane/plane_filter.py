@@ -38,7 +38,7 @@ class TileProcessor:
         )
 
         # threshold
-        if isinstance(stats, type(None)):
+        if isinstance(stats[1], type(None)):
             avg = thresholded_img.ravel().mean()
             sd = thresholded_img.ravel().std()
         else:
