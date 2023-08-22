@@ -103,7 +103,6 @@ class VolumeFilter(object):
         logging.debug("3D filter done")
         
         cells = self.get_results()
-
         return cells
 
     def save_plane(self, plane):
