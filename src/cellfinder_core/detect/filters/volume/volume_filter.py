@@ -115,7 +115,6 @@ class VolumeFilter(object):
         for plane_id, res in enumerate(async_results):
             plane, mask = res[0], res[1]#res.get()
             logging.debug(f"Plane {plane_id} received for 3D filtering")
-            print(f"Plane {plane_id} received for 3D filtering")
 
             logging.debug(f"Adding plane {plane_id} for 3D filtering")
             self.ball_filter.append(plane, mask)
