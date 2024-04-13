@@ -426,9 +426,12 @@ class CubeGeneratorFromDisk(Sequence):
                 self.interpolation_order,
                 self.augment_likelihood,
             )
-        images[idx, :, :, :, 0] = self.__get_oriented_image(signal_im)
-        images[idx, :, :, :, 1] = self.__get_oriented_image(background_im)
-
+            
+        sig = self.__get_oriented_image(signal_im)
+        bkg = self.__get_oriented_image(background_im)
+        images[idx, :, :, :, 0] = np.clip(sig, 0, 65519)
+        images[idx, :, :, :, 1] = np.clip(bkg, 0, 65519)
+        
         return images
 
     def __get_oriented_image(self, image_path):
